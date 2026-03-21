@@ -1,0 +1,290 @@
+{
+  "info": {
+    "name": "Truyện Việt Nam API",
+    "description": "API collection for Vietnamese story platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "story_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"user1\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', response.access_token || response.token);",
+                  "    console.log('Token saved:', pm.collectionVariables.get('auth_token'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Stories",
+      "item": [
+        {
+          "name": "Create Story",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Đấu La Đại Lục\",\n  \"slug\": \"dau-la-dai-luc\",\n  \"description\": \"Truyện huyền huyễn về đấu la\",\n  \"coverImage\": \"https://example.com/cover.jpg\",\n  \"publishStatus\": \"ONGOING\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/truyen",
+              "host": ["{{base_url}}"],
+              "path": ["api", "truyen"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('story_id', response.id);",
+                  "    console.log('Story ID saved:', pm.collectionVariables.get('story_id'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Story Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/truyen/{{story_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "truyen", "{{story_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get All Stories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/truyen",
+              "host": ["{{base_url}}"],
+              "path": ["api", "truyen"]
+            }
+          }
+        },
+        {
+          "name": "Get Story by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/truyen/{{story_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "truyen", "{{story_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chapters",
+      "item": [
+        {
+          "name": "Add Chapter 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"truyenId\": {{story_id}},\n  \"chapterNumber\": 1,\n  \"title\": \"Chương 1: Bắt đầu hành trình\",\n  \"content\": \"Nội dung chương 1...\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/chapters",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chapters"]
+            }
+          }
+        },
+        {
+          "name": "Add Chapter 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"truyenId\": {{story_id}},\n  \"chapterNumber\": 2,\n  \"title\": \"Chương 2: Tiếp tục\",\n  \"content\": \"Nội dung chương 2...\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/chapters",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chapters"]
+            }
+          }
+        },
+        {
+          "name": "Get Story Chapters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/truyen/{{story_id}}/chapters",
+              "host": ["{{base_url}}"],
+              "path": ["api", "truyen", "{{story_id}}", "chapters"]
+            }
+          }
+        },
+        {
+          "name": "Increment View Count",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/truyen/{{story_id}}/increment-view",
+              "host": ["{{base_url}}"],
+              "path": ["api", "truyen", "{{story_id}}", "increment-view"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Genres",
+      "item": [
+        {
+          "name": "Get All Genres",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/genres",
+              "host": ["{{base_url}}"],
+              "path": ["api", "genres"]
+            }
+          }
+        },
+        {
+          "name": "Create Genre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Huyền Huyễn\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/genres",
+              "host": ["{{base_url}}"],
+              "path": ["api", "genres"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Actions",
+      "item": [
+        {
+          "name": "Approve Story",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/truyen/{{story_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "truyen", "{{story_id}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Story",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/truyen/{{story_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "truyen", "{{story_id}}", "reject"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
