@@ -8,6 +8,7 @@ import GenreDetail from '../pages/GenreDetail.vue'
 import Top from '../pages/Top.vue'
 import Profile from '../pages/Profile.vue'
 import Forgot from '../pages/Forgot.vue'
+import NotFound from '../pages/NotFound.vue'
 
 export default [
   { path: '/login', name: 'Login', component: Login, meta: { hideHeader: true, hideFooter: true } },
@@ -20,5 +21,6 @@ export default [
   { path: '/me', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
   { path: '/story/:id', name: 'StoryDetail', component: StoryDetail, meta: { requiresAuth: false } },
   { path: '/:storySlug/chuong-:chapterSlug', name: 'Reader', component: Reader, meta: { requiresAuth: false, hideHeader: true, hideFooter: true } },
-  { path: '/story/:id/read/:chapter', name: 'ReaderLegacy', component: Reader, meta: { requiresAuth: false, hideHeader: true, hideFooter: true } }
+  { path: '/story/:id/read/:chapter', name: 'ReaderLegacy', component: Reader, meta: { requiresAuth: false, hideHeader: true, hideFooter: true } },
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound, meta: { hideHeader: true, hideFooter: true } }
 ]

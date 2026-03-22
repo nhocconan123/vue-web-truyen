@@ -95,7 +95,9 @@
             <div v-if="comments.length === 0" class="text-sm text-gray-500">Chưa có bình luận.</div>
             <div v-else class="space-y-3">
               <div v-for="c in comments" :key="c.id" class="flex gap-3">
-                <div class="w-10 h-10 rounded-full bg-gray-200"></div>
+                <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
+                  <img v-if="c.avatar" :src="c.avatar" alt="" class="w-full h-full object-cover" />
+                </div>
                 <div class="flex-1">
                   <div class="text-sm font-medium">{{ c.username || 'Người dùng' }}</div>
                   <div class="text-sm text-gray-700">{{ c.content }}</div>

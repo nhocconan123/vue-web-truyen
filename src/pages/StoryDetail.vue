@@ -15,6 +15,7 @@
                 <h1 class="text-2xl font-bold">{{ story.title }}</h1>
                 <p class="text-sm mt-1">Tác giả: {{ storyAuthor }}</p>
                 <p class="text-xs mt-1">Thể loại: {{ genreText }}</p>
+                <p v-if="publishStatusText" class="text-xs mt-1">Trạng thái: {{ publishStatusText }}</p>
                 <div class="mt-3 flex flex-wrap gap-2">
                   <router-link v-if="firstChapter" :to="readerLink(firstChapter)" class="px-4 py-2 bg-blue-500 rounded">
                     Đọc từ đầu
@@ -42,17 +43,38 @@
               <div>Yêu thích: <strong>{{ stats.favorites ?? 0 }}</strong></div>
             </div>
             <div class="text-sm text-gray-600">
-              Đánh giá trung bình: <strong>{{ averageRatingDisplay }}</strong>
+              <div class="flex items-center gap-2">
+                <span>Đánh giá trung bình:</span>
+                <div class="flex items-center gap-1">
+                  <span
+                    v-for="n in 5"
+                    :key="`avg-${n}`"
+                    :class="n <= averageStars ? 'text-yellow-400' : 'text-gray-300'"
+                    class="text-base"
+                  >
+                    ★
+                  </span>
+                </div>
+                <span v-if="hasAverageRating" class="text-xs text-gray-500">({{ averageRatingDisplay }})</span>
+              </div>
               <div class="mt-2 flex items-center gap-2">
                 <span>Đánh giá:</span>
-                <button
-                  v-for="n in 5"
-                  :key="n"
-                  @click="rate(n)"
-                  class="px-2 py-1 border rounded text-xs"
-                >
-                  {{ n }}★
-                </button>
+                <div class="flex items-center gap-1">
+                  <button
+                    v-for="n in 5"
+                    :key="`rate-${n}`"
+                    @click="rate(n)"
+                    @mouseenter="hoverRating = n"
+                    @mouseleave="hoverRating = 0"
+                    class="bg-transparent p-1"
+                    type="button"
+                    :aria-label="`Đánh giá ${n} sao`"
+                  >
+                    <span :class="n <= activeRating ? 'text-yellow-400' : 'text-gray-300'" class="text-lg">
+                      ★
+                    </span>
+                  </button>
+                </div>
               </div>
               <p v-if="ratingError" class="text-xs text-red-600 mt-1">{{ ratingError }}</p>
             </div>
@@ -73,6 +95,35 @@
               <div class="text-xs text-gray-500">{{ c.createdAt ? formatTime(c.createdAt) : '' }}</div>
             </li>
           </ul>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg shadow">
+          <h3 class="font-semibold mb-3">Bình luận ({{ comments.length }})</h3>
+          <div v-if="comments.length === 0" class="text-sm text-gray-500">Chưa có bình luận.</div>
+          <div v-else class="space-y-3">
+            <div v-for="c in comments" :key="c.id" class="flex gap-3">
+              <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
+                <img v-if="c.avatar" :src="c.avatar" alt="" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">{{ c.username || 'Người dùng' }}</div>
+                <div class="text-sm text-gray-700">{{ c.content }}</div>
+                <div class="text-xs text-gray-400 mt-1">{{ formatTime(c.createdAt) }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 border-t pt-4">
+            <textarea
+              v-model="newComment"
+              rows="3"
+              class="w-full p-2 border rounded"
+              placeholder="Viết bình luận..."
+            ></textarea>
+            <div class="mt-2 text-right">
+              <button @click="postComment" class="px-4 py-1 bg-blue-600 text-white rounded">Gửi</button>
+            </div>
+            <p v-if="commentError" class="text-xs text-red-600 mt-1">{{ commentError }}</p>
+          </div>
         </div>
       </main>
 
@@ -102,6 +153,7 @@ import favoritesService from '../services/favorites'
 import followsService from '../services/follows'
 import ratingsService from '../services/ratings'
 import truyenGenresService from '../services/truyenGenres'
+import commentsService from '../services/comments'
 
 const route = useRoute()
 const router = useRouter()
@@ -112,7 +164,12 @@ const authStore = useAuthStore()
 const story = ref(null)
 const stats = ref({})
 const genreNames = ref([])
-const averageRating = ref(null)
+const ratingSummary = ref({ myRating: null, averageRounded: 0, count: 0 })
+const selectedRating = ref(0)
+const hoverRating = ref(0)
+const comments = ref([])
+const newComment = ref('')
+const commentError = ref('')
 const isFavorite = ref(false)
 const isFollowing = ref(false)
 const ratingError = ref('')
@@ -125,7 +182,15 @@ const recommendations = computed(() => storiesStore.stories.slice(0, 4))
 const storyAuthor = computed(() => story.value?.author || story.value?.authorName || 'Ẩn danh')
 const storyCover = computed(() => story.value?.coverImage || 'https://picsum.photos/seed/story/800/400')
 const genreText = computed(() => genreNames.value.length ? genreNames.value.join(', ') : 'Chưa phân loại')
-const averageRatingDisplay = computed(() => averageRating.value?.averageRating || averageRating.value || 0)
+const averageRatingDisplay = computed(() => Number(ratingSummary.value?.averageRounded || 0))
+const hasAverageRating = computed(() => averageRatingDisplay.value > 0)
+const averageStars = computed(() => averageRatingDisplay.value)
+const activeRating = computed(() => hoverRating.value || selectedRating.value)
+const publishStatusText = computed(() => {
+  const status = story.value?.publishStatus
+  if (status === 'ONGOING') return 'Đang cập nhật'
+  return ''
+})
 
 const firstChapter = computed(() => {
   const list = [...chapters.value]
@@ -200,13 +265,13 @@ async function loadStory() {
 
     await storiesStore.fetchChapters(story.value.id)
     stats.value = await storiesStore.fetchStoryStats(story.value.id)
+    await loadComments()
+    await loadRatingSummary()
 
     const tg = await truyenGenresService.getByTruyen(story.value.id)
     const ids = normalizePaged(tg).map((x) => x.genreId ?? x.id ?? x)
     const map = new Map(genresStore.genres.map(g => [g.id, g.name]))
     genreNames.value = ids.map((id) => map.get(id)).filter(Boolean)
-
-    averageRating.value = await ratingsService.getAverage(story.value.id)
 
     if (authStore.isAuthenticated) {
       await loadFavoriteStatus()
@@ -231,6 +296,56 @@ async function loadFollowStatus() {
   const res = await followsService.getFollowing({ page: 0, size: 100 })
   const list = normalizePaged(res)
   isFollowing.value = list.some((f) => f.followingId === story.value.authorId)
+}
+
+async function loadRatingSummary() {
+  if (!story.value?.id) return
+  try {
+    const summary = await ratingsService.getSummary(story.value.id)
+    ratingSummary.value = {
+      myRating: summary?.myRating ?? null,
+      averageRounded: summary?.averageRounded ?? 0,
+      count: summary?.count ?? 0
+    }
+    if (ratingSummary.value.myRating) {
+      selectedRating.value = Number(ratingSummary.value.myRating)
+    } else {
+      selectedRating.value = 0
+    }
+  } catch {
+    ratingSummary.value = { myRating: null, averageRounded: 0, count: 0 }
+    selectedRating.value = 0
+  }
+}
+
+async function loadComments() {
+  if (!story.value?.id) return
+  try {
+    const data = await commentsService.getAll({ page: 0, size: 10, truyenId: story.value.id })
+    comments.value = normalizePaged(data)
+  } catch {
+    comments.value = []
+  }
+}
+
+async function postComment() {
+  const content = String(newComment.value || '').trim()
+  if (!content) return
+  commentError.value = ''
+  if (!authStore.isAuthenticated) {
+    commentError.value = 'Vui lòng đăng nhập để bình luận.'
+    return
+  }
+  if (!story.value?.id) return
+  try {
+    const created = await commentsService.create({ truyenId: story.value.id, content })
+    if (created) {
+      comments.value = [created, ...comments.value]
+    }
+    newComment.value = ''
+  } catch (e) {
+    commentError.value = e.message || 'Không thể gửi bình luận.'
+  }
 }
 
 async function toggleFavorite() {
@@ -268,11 +383,19 @@ async function rate(value) {
     ratingError.value = 'Vui lòng đăng nhập để đánh giá.'
     return
   }
-  if (!story.value?.id || !authStore.user?.id) return
+  if (!story.value?.id) return
   ratingError.value = ''
+  selectedRating.value = value
   try {
-    await ratingsService.rate(Number(authStore.user.id), story.value.id, value)
-    averageRating.value = await ratingsService.getAverage(story.value.id)
+    const summary = await ratingsService.rate(story.value.id, value)
+    ratingSummary.value = {
+      myRating: summary?.myRating ?? value,
+      averageRounded: summary?.averageRounded ?? ratingSummary.value.averageRounded ?? 0,
+      count: summary?.count ?? ratingSummary.value.count ?? 0
+    }
+    if (ratingSummary.value.myRating) {
+      selectedRating.value = Number(ratingSummary.value.myRating)
+    }
   } catch (e) {
     ratingError.value = e.message || 'Không thể đánh giá.'
   }

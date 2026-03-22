@@ -8,7 +8,7 @@ export default [
   {
     path: '/admin',
     component: AdminLayout,
-    meta: { requiresAuth: true, requiresAdmin: true },
+    meta: { requiresAuth: true },
     children: [
       {
         path: '',
@@ -23,7 +23,8 @@ export default [
       {
         path: 'users',
         name: 'AdminUsers',
-        component: AdminUsers
+        component: AdminUsers,
+        meta: { requiresAdmin: true }
       },
       {
         path: 'categories',

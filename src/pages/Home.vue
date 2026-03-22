@@ -81,7 +81,12 @@
         <div class="bg-white p-4 rounded-lg shadow">
           <h4 class="font-semibold mb-3">Thể loại</h4>
           <ul class="space-y-2 text-sm text-gray-600">
-            <li v-for="cat in genres" :key="cat.id">· {{ cat.name }}</li>
+            <li v-for="cat in genres" :key="cat.id">
+              <router-link :to="genreLink(cat)" class="inline-flex items-center gap-2 hover:text-blue-600">
+                <span class="text-gray-400">·</span>
+                <span>{{ cat.name }}</span>
+              </router-link>
+            </li>
           </ul>
         </div>
 
@@ -146,6 +151,22 @@ function storyAuthor(story) {
 
 function storySummary(story) {
   return story.description || 'Chưa có mô tả.'
+}
+
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
+function genreLink(genre) {
+  const slug = genre.slug || slugify(genre.name) || String(genre.id)
+  return { name: 'GenreDetail', params: { slug } }
 }
 
 async function loadStories() {
