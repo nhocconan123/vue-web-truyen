@@ -15,14 +15,23 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const auth = useAuthStore()
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return next({ name: 'Login', query: { redirect: to.fullPath } })
   }
-  // không kiểm tra role nữa, chỉ cần xác thực
-  // nếu cần xóa meta.requiresAdmin khỏi routes cũng được, nhưng guard sẽ bỏ qua
-  
+  if (to.meta.requiresAdmin) {
+    if (!auth.isAuthenticated) {
+      return next({ name: 'Login', query: { redirect: to.fullPath } })
+    }
+    if (!auth.user) {
+      await auth.fetchMe()
+    }
+    if (!auth.isAdmin) {
+      return next({ name: 'Home' })
+    }
+  }
+
   return next()
 })
 

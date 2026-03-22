@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-4xl mx-auto p-6">
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold">Thêm truyện mới</h1>
+      <h1 class="text-2xl font-bold">{{ isEditMode ? 'Chỉnh sửa truyện' : 'Thêm truyện mới' }}</h1>
       <router-link to="/admin" class="text-gray-600 hover:text-gray-800">← Quay lại</router-link>
     </div>
 
@@ -38,7 +38,7 @@
     <div v-if="step === 1" class="bg-white rounded-lg shadow p-6">
       <h2 class="text-xl font-semibold mb-4">Thông tin truyện</h2>
 
-      <form @submit.prevent="createStory" class="space-y-4">
+      <form @submit.prevent="submitStory" class="space-y-4">
         <FormField label="Tiêu đề" required>
           <BaseInput
             v-model="storyForm.title"
@@ -109,12 +109,20 @@
           <router-link to="/admin" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
             Hủy
           </router-link>
+          <button
+            v-if="isEditMode"
+            type="button"
+            @click="goToChapters"
+            class="px-4 py-2 border border-indigo-200 rounded-lg text-indigo-600 hover:bg-indigo-50"
+          >
+            Thêm chương
+          </button>
           <BaseButton
             type="submit"
-            :disabled="storiesStore.creatingStory"
+            :disabled="isSavingStory"
             class="px-6 py-2"
           >
-            {{ storiesStore.creatingStory ? 'Đang tạo...' : 'Tạo truyện' }}
+            {{ isSavingStory ? (isEditMode ? 'Đang cập nhật...' : 'Đang tạo...') : (isEditMode ? 'Cập nhật truyện' : 'Tạo truyện') }}
           </BaseButton>
         </div>
       </form>
@@ -241,10 +249,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useStoriesStore, useGenreStore, type Story, type Chapter } from '@/stores'
 import { BaseInput, BaseTextarea, FormField, BaseButton } from '@/components'
 import ChapterModal from '../components/ChapterModal.vue'
+import truyenGenresService from '@/services/truyenGenres'
 
+const route = useRoute()
 const storiesStore = useStoriesStore()
 const genreStore = useGenreStore()
 const genres = computed(() => genreStore.genres)
@@ -254,6 +265,16 @@ const step = ref(1)
 const noticeMessage = ref('')
 const noticeType = ref<'success' | 'error'>('success')
 let noticeTimer: number | undefined
+const savingStory = ref(false)
+
+const editId = computed(() => {
+  const raw = route.query.edit
+  if (raw == null) return null
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+})
+const isEditMode = computed(() => editId.value != null)
+const isSavingStory = computed(() => storiesStore.creatingStory || savingStory.value)
 
 // Form data
 const storyForm = ref<Omit<Story, 'id'>>({
@@ -289,6 +310,30 @@ function showNotice(type: 'success' | 'error', message: string): void {
   }, 3000)
 }
 
+function normalizePaged(payload: any) {
+  if (Array.isArray(payload)) return payload
+  return payload?.content || payload?.data || payload?.items || payload?.results || []
+}
+
+function normalizeGenreIdsInput(input: any): number[] {
+  if (!Array.isArray(input)) return []
+  const ids = input
+    .map((item) => {
+      if (typeof item === 'number') return item
+      if (typeof item === 'string') {
+        const parsed = Number(item)
+        return Number.isFinite(parsed) ? parsed : null
+      }
+      if (item && typeof item === 'object') {
+        return item.genreId ?? item.id ?? item.value ?? null
+      }
+      return null
+    })
+    .filter((id) => Number.isFinite(id))
+    .map((id) => Number(id))
+  return Array.from(new Set(ids))
+}
+
 // Auto-generate slug from title
 watch(() => storyForm.value.title, (newTitle) => {
   if (newTitle && !storyForm.value.slug) {
@@ -308,10 +353,53 @@ onMounted(() => {
   }
 })
 
+async function loadStoryForEdit(): Promise<void> {
+  if (!isEditMode.value || !editId.value) return
+  try {
+    const story = await storiesStore.fetchStoryById(editId.value)
+    if (!story) return
+
+    storiesStore.setCurrentStory(story)
+    storyForm.value = {
+      title: story.title || '',
+      authorName: story.authorName || story.author || '',
+      genreIds: normalizeGenreIdsInput(story.genreIds),
+      slug: story.slug || '',
+      description: story.description || '',
+      coverImage: story.coverImage || '',
+      publishStatus: story.publishStatus || 'ONGOING'
+    }
+
+    if (!storyForm.value.genreIds.length && story.id) {
+      const tg = await truyenGenresService.getByTruyen(story.id)
+      const ids = normalizePaged(tg).map((x: any) => x.genreId ?? x.id ?? x)
+      storyForm.value.genreIds = normalizeGenreIdsInput(ids)
+    }
+
+    chapterForm.value.truyenId = story.id || 0
+    await loadChapters()
+  } catch (err) {
+    showNotice('error', err instanceof Error ? err.message : 'Không thể tải truyện để sửa')
+  }
+}
+
+watch(
+  () => route.query.edit,
+  async () => {
+    await loadStoryForEdit()
+  },
+  { immediate: true }
+)
+
 // Create story
 async function createStory(): Promise<void> {
   try {
-    const newStory = await storiesStore.createStory(storyForm.value)
+    const payload = {
+      ...storyForm.value,
+      genreIds: normalizeGenreIdsInput(storyForm.value.genreIds)
+    }
+    storyForm.value.genreIds = payload.genreIds
+    const newStory = await storiesStore.createStory(payload)
     storiesStore.setCurrentStory(newStory)
     chapterForm.value.truyenId = newStory.id!
     step.value = 2
@@ -323,6 +411,69 @@ async function createStory(): Promise<void> {
     showNotice('error', err instanceof Error ? err.message : 'Không thể tạo truyện')
     console.error('Error creating story:', err)
   }
+}
+
+async function updateStory(): Promise<void> {
+  if (!editId.value) return
+  savingStory.value = true
+  try {
+    const normalizedGenres = normalizeGenreIdsInput(storyForm.value.genreIds)
+    const payload = {
+      title: storyForm.value.title,
+      authorName: storyForm.value.authorName,
+      genreIds: normalizedGenres,
+      slug: storyForm.value.slug,
+      description: storyForm.value.description,
+      coverImage: storyForm.value.coverImage,
+      publishStatus: storyForm.value.publishStatus
+    }
+    storyForm.value.genreIds = normalizedGenres
+
+    let updated: any
+    try {
+      const res: any = await storiesStore.updateStoryDetails(editId.value, payload)
+      updated = (res && (res.truyen || res.story)) || res
+    } catch (err: any) {
+      const status = err?.response?.status
+      if (status === 404 || status === 405) {
+        updated = await storiesStore.updateStory(editId.value, payload)
+      } else {
+        throw err
+      }
+    }
+
+    if (updated) {
+      storiesStore.setCurrentStory(updated)
+    }
+
+    chapterForm.value.truyenId = editId.value
+    await loadChapters()
+    step.value = 2
+    showNotice('success', 'Cập nhật truyện thành công!')
+  } catch (err) {
+    showNotice('error', err instanceof Error ? err.message : 'Không thể cập nhật truyện')
+    console.error('Error updating story:', err)
+  } finally {
+    savingStory.value = false
+  }
+}
+
+async function submitStory(): Promise<void> {
+  if (isEditMode.value) {
+    await updateStory()
+  } else {
+    await createStory()
+  }
+}
+
+async function goToChapters(): Promise<void> {
+  if (!currentStory.value?.id) {
+    showNotice('error', 'Vui lòng chờ tải truyện trước khi thêm chương.')
+    return
+  }
+  chapterForm.value.truyenId = currentStory.value.id
+  await loadChapters()
+  step.value = 2
 }
 
 // Load chapters for current story

@@ -17,7 +17,7 @@
 
         <form @submit.prevent="submit" class="space-y-4">
           <FormField label="Tên đăng nhập" :error="errors.username">
-            <BaseInput v-model="username" placeholder="admin01" autocomplete="username" autofocus />
+            <BaseInput v-model="username" placeholder="User name" autocomplete="username" autofocus />
           </FormField>
 
           <FormField label="Mật khẩu" :error="errors.password">

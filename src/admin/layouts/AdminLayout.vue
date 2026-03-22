@@ -6,7 +6,7 @@
       <nav class="space-y-2">
         <router-link to="/admin" class="block px-2 py-1 hover:bg-gray-700 rounded">Dashboard</router-link>
         <router-link to="/admin/stories/new" class="block px-2 py-1 hover:bg-gray-700 rounded">Thêm truyện</router-link>
-        <router-link to="/admin/users" class="block px-2 py-1 hover:bg-gray-700 rounded">Người dùng</router-link>
+        <router-link v-if="isAdmin" to="/admin/users" class="block px-2 py-1 hover:bg-gray-700 rounded">Người dùng</router-link>
         <router-link to="/admin/categories" class="block px-2 py-1 hover:bg-gray-700 rounded">Thể loại</router-link>
         <!-- add more admin links here -->
       </nav>
@@ -22,8 +22,10 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'AdminLayout'
-}
+<script setup>
+import { computed } from 'vue'
+import { useAuthStore } from '@/stores'
+
+const authStore = useAuthStore()
+const isAdmin = computed(() => authStore.isAdmin)
 </script>

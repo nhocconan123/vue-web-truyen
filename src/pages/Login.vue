@@ -38,9 +38,9 @@
               <span v-if="!loading">Đăng nhập</span>
               <span v-else>Đang đăng nhập...</span>
             </BaseButton>
-            <button type="button" @click="fillDemo" class="px-4 py-2 border rounded hover:bg-gray-50">
+            <!-- <button type="button" @click="fillDemo" class="px-4 py-2 border rounded hover:bg-gray-50">
               Demo
-            </button>
+            </button> -->
           </div>
 
           <div class="pt-4 text-center text-sm text-gray-500">

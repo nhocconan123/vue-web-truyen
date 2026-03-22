@@ -7,6 +7,7 @@ export interface Comment {
   content: string
   userId?: number
   username?: string
+  avatar?: string
   createdAt?: string
 }
 
