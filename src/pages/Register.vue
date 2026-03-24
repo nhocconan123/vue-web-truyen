@@ -1,6 +1,6 @@
 ﻿<template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-white">
-    <div class="w-full max-w-xl mx-4 bg-white p-8 rounded-xl shadow-md">
+  <div class="min-h-screen flex items-center justify-center login-page">
+    <div class="w-full max-w-xl mx-4 login-card p-8 rounded-xl shadow-md">
       <div class="mb-6 text-center">
         <img src="/logo.svg" alt="Logo" class="mx-auto w-20 h-20 mb-2" />
         <h2 class="text-2xl font-semibold">Đăng ký</h2>
@@ -9,15 +9,15 @@
 
       <form @submit.prevent="submit" class="space-y-4">
         <FormField label="Tên đăng nhập" :error="errors.username">
-          <BaseInput v-model="form.username" placeholder="username" autocomplete="username" />
+          <BaseInput v-model="form.username" placeholder="user1" autocomplete="username" />
         </FormField>
 
         <FormField label="Email" :error="errors.email">
-          <BaseInput v-model="form.email" placeholder="email@example.com" type="email" autocomplete="email" />
+          <BaseInput v-model="form.email" placeholder="user1@example.com" type="email" autocomplete="email" />
         </FormField>
 
         <FormField label="Mật khẩu" :error="errors.password">
-          <BaseInput v-model="form.password" type="password" placeholder="••••••" autocomplete="new-password" />
+          <BaseInput v-model="form.password" type="password" placeholder="123456" autocomplete="new-password" />
         </FormField>
 
         <FormField label="Avatar URL">
@@ -66,27 +66,58 @@ export default {
     const errors = reactive({ username: null, email: null, password: null })
 
     const validate = () => {
-      errors.username = form.username ? null : 'Vui lòng nhập tên đăng nhập'
-      errors.email = form.email ? null : 'Vui lòng nhập email'
-      errors.password = form.password ? null : 'Vui lòng nhập mật khẩu'
+      const username = String(form.username || '').trim()
+      const email = String(form.email || '').trim()
+      const password = String(form.password || '').trim()
+
+      errors.username = username ? null : 'Vui lòng nhập tên đăng nhập'
+      errors.email = email ? null : 'Vui lòng nhập email'
+      errors.password = password ? null : 'Vui lòng nhập mật khẩu'
+
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.email = 'Email không hợp lệ'
+      }
+
       return !errors.username && !errors.email && !errors.password
     }
 
     const submit = async () => {
       error.value = null
+      errors.username = null
+      errors.email = null
+      errors.password = null
       if (!validate()) return
       loading.value = true
       try {
         await authStore.register({
-          username: form.username,
-          email: form.email,
-          password: form.password,
-          avatar: form.avatar || undefined,
-          bio: form.bio || undefined
+          username: String(form.username || '').trim(),
+          email: String(form.email || '').trim(),
+          password: String(form.password || '').trim(),
+          avatar: form.avatar || '',
+          bio: form.bio || ''
         })
         router.push('/')
       } catch (e) {
-        error.value = e.response?.data?.message || e.message || 'Đăng ký thất bại'
+        const message = e.response?.data?.message || e.message || 'Đăng ký thất bại'
+        const lower = String(message || '').toLowerCase()
+        const payload = e.response?.data
+
+        if (payload?.errors && typeof payload.errors === 'object') {
+          errors.username = payload.errors.username || errors.username
+          errors.email = payload.errors.email || errors.email
+          errors.password = payload.errors.password || errors.password
+        }
+
+        if (lower.includes('username')) {
+          errors.username = 'Tên đăng nhập đã tồn tại'
+        }
+        if (lower.includes('email')) {
+          errors.email = 'Email đã tồn tại'
+        }
+
+        if (!errors.username && !errors.email && !errors.password) {
+          error.value = message
+        }
       } finally {
         loading.value = false
       }
