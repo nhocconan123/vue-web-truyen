@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-white">
+  <div class="min-h-screen flex items-center justify-center login-page">
     <div class="w-full max-w-4xl mx-4 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
       <div class="hidden lg:flex items-center justify-center">
         <div class="w-96 p-8 rounded-xl shadow-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white">
@@ -8,7 +8,7 @@
         </div>
       </div>
 
-      <div class="bg-white p-8 rounded-xl shadow-md">
+      <div class="login-card p-8 rounded-xl shadow-md">
         <div class="mb-6 text-center">
           <img src="/logo.svg" alt="Logo" class="mx-auto w-20 h-20 mb-2" />
           <h2 class="text-2xl font-semibold">Đăng nhập</h2>
