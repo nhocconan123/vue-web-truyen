@@ -8,6 +8,7 @@ import GenreDetail from '../pages/GenreDetail.vue'
 import Top from '../pages/Top.vue'
 import Profile from '../pages/Profile.vue'
 import Forgot from '../pages/Forgot.vue'
+import ChangePassword from '../pages/ChangePassword.vue'
 import NotFound from '../pages/NotFound.vue'
 
 export default [
@@ -19,6 +20,7 @@ export default [
   { path: '/categories', name: 'Categories', component: Categories },
   { path: '/top', name: 'Top', component: Top },
   { path: '/me', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
+  { path: '/account/password/change', name: 'ChangePassword', component: ChangePassword, meta: { requiresAuth: true } },
   { path: '/story/:id', name: 'StoryDetail', component: StoryDetail, meta: { requiresAuth: false } },
   { path: '/:storySlug/chuong-:chapterSlug', name: 'Reader', component: Reader, meta: { requiresAuth: false, hideHeader: true, hideFooter: true } },
   { path: '/story/:id/read/:chapter', name: 'ReaderLegacy', component: Reader, meta: { requiresAuth: false, hideHeader: true, hideFooter: true } },

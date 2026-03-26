@@ -57,7 +57,7 @@ export default {
           genres: genres.value.split(',').map(g => g.trim()).filter(Boolean)
         }
         // use full backend URL to ensure correct target
-        const res = await api.post('http://127.0.0.1:8080/api/stories', payload)
+        const res = await api.post('http://127.0.0.1:8081/api/stories', payload)
         message.value = 'Tạo truyện thành công'
         // optionally clear form
         title.value = ''
