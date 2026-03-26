@@ -1,7 +1,7 @@
 import axios from 'axios'
 import auth from './auth'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8080'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8081'
 
 const api = axios.create({
   baseURL: API_BASE,

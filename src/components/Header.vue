@@ -157,6 +157,9 @@
                 </div>
                 <p v-if="nameError" class="dropdown-error">{{ nameError }}</p>
               </div>
+              <router-link to="/account/password/change" class="dropdown-link" @click="closeUserMenu">
+                Đổi mật khẩu
+              </router-link>
               <button type="button" class="dropdown-link danger" @click="logout">
                 Đăng xuất
               </button>

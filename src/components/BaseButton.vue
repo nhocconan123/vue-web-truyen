@@ -2,6 +2,7 @@
   <button
     :class="classes"
     :disabled="disabled"
+    :type="type"
     @click="$emit('click', $event)"
   >
     <slot />
@@ -14,7 +15,8 @@ export default {
   props: {
     variant: { type: String, default: 'primary' },
     size: { type: String, default: 'md' },
-    disabled: { type: Boolean, default: false }
+    disabled: { type: Boolean, default: false },
+    type: { type: String, default: 'submit' }
   },
   computed: {
     classes () {
