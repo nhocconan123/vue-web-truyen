@@ -8,6 +8,54 @@
           </div>
           <span class="brand-name">Web truyện</span>
         </router-link>
+        <div class="dropdown-top header-theme-toggle">
+          <button
+            type="button"
+            class="theme-toggle"
+            :class="{ 'is-dark': themeMode === 'dark' }"
+            :aria-label="themeMode === 'dark' ? 'Chuyá»ƒn sang giao diá»‡n sÃ¡ng' : 'Chuyá»ƒn sang giao diá»‡n tá»‘i'"
+            @click="toggleThemeMode"
+          >
+            <span class="theme-icon theme-icon--sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5" />
+                <path d="M12 2.5V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M12 19V21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M4.5 12H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M22 12H19.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </span>
+            <span class="theme-icon theme-icon--moon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M20.2 14.4C19.4 14.7 18.5 14.9 17.6 14.9C13.7 14.9 10.6 11.8 10.6 7.9C10.6 7 10.7 6.1 11 5.3C7.7 6.3 5.4 9.3 5.4 12.8C5.4 17.1 8.9 20.6 13.2 20.6C16.6 20.6 19.6 18.3 20.6 15C20.5 14.8 20.4 14.6 20.2 14.4Z"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            <span class="theme-thumb" aria-hidden="true">
+              <span class="theme-thumb-icon">
+                <svg v-if="themeMode === 'dark'" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M20.2 14.4C19.4 14.7 18.5 14.9 17.6 14.9C13.7 14.9 10.6 11.8 10.6 7.9C10.6 7 10.7 6.1 11 5.3C7.7 6.3 5.4 9.3 5.4 12.8C5.4 17.1 8.9 20.6 13.2 20.6C16.6 20.6 19.6 18.3 20.6 15C20.5 14.8 20.4 14.6 20.2 14.4Z"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <svg v-else viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5" />
+                  <path d="M12 2.5V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  <path d="M12 19V21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  <path d="M4.5 12H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  <path d="M22 12H19.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              </span>
+            </span>
+          </button>
+        </div>
         <nav class="nav-links">
           <div class="nav-item">
             <button
@@ -80,7 +128,46 @@
               <span class="nav-caret">▾</span>
             </button>
             <div v-if="showUserMenu" class="dropdown-panel user-dropdown" @click.stop>
-              <div class="dropdown-top">
+              
+              <div class="dropdown-divider"></div>
+              <router-link to="/admin" class="dropdown-link" @click="closeUserMenu">
+                Dashboard
+              </router-link>
+              <button type="button" class="dropdown-link" @click="toggleEditName">
+                Sửa tên user
+              </button>
+              <div v-if="showEditName" class="dropdown-edit">
+                <input
+                  v-model="editUsername"
+                  class="dropdown-input"
+                  type="text"
+                  placeholder="Nhập tên mới"
+                />
+                <div class="dropdown-actions">
+                  <button
+                    type="button"
+                    class="dropdown-action primary"
+                    :disabled="savingName"
+                    @click="saveUsername"
+                  >
+                    {{ savingName ? 'Đang lưu...' : 'Lưu' }}
+                  </button>
+                  <button type="button" class="dropdown-action" @click="cancelEditName">
+                    Huỷ
+                  </button>
+                </div>
+                <p v-if="nameError" class="dropdown-error">{{ nameError }}</p>
+              </div>
+              <router-link to="/account/password/change" class="dropdown-link" @click="closeUserMenu">
+                Đổi mật khẩu
+              </router-link>
+              <button type="button" class="dropdown-link danger" @click="logout">
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="dropdown-top">
                 <button
                   type="button"
                   class="theme-toggle"
@@ -128,44 +215,6 @@
                   </span>
                 </button>
               </div>
-              <div class="dropdown-divider"></div>
-              <router-link to="/admin" class="dropdown-link" @click="closeUserMenu">
-                Dashboard
-              </router-link>
-              <button type="button" class="dropdown-link" @click="toggleEditName">
-                Sửa tên user
-              </button>
-              <div v-if="showEditName" class="dropdown-edit">
-                <input
-                  v-model="editUsername"
-                  class="dropdown-input"
-                  type="text"
-                  placeholder="Nhập tên mới"
-                />
-                <div class="dropdown-actions">
-                  <button
-                    type="button"
-                    class="dropdown-action primary"
-                    :disabled="savingName"
-                    @click="saveUsername"
-                  >
-                    {{ savingName ? 'Đang lưu...' : 'Lưu' }}
-                  </button>
-                  <button type="button" class="dropdown-action" @click="cancelEditName">
-                    Huỷ
-                  </button>
-                </div>
-                <p v-if="nameError" class="dropdown-error">{{ nameError }}</p>
-              </div>
-              <router-link to="/account/password/change" class="dropdown-link" @click="closeUserMenu">
-                Đổi mật khẩu
-              </router-link>
-              <button type="button" class="dropdown-link danger" @click="logout">
-                Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
 
       <nav class="mobile-nav">
@@ -364,10 +413,10 @@ watch(
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 18px 18px 14px;
+  padding: 14px 14px 12px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   font-family: 'Space Grotesk', 'Noto Sans', sans-serif;
 }
 
@@ -375,7 +424,9 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .brand {
@@ -383,6 +434,7 @@ watch(
   align-items: center;
   gap: 12px;
   text-decoration: none;
+  min-width: 0;
 }
 
 .brand-mark {
@@ -406,8 +458,8 @@ watch(
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--header-text, #0f172a);
-  font-size: 18px;
-  padding: 4px 10px;
+  font-size: 16px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: var(--surface-muted, rgba(15, 23, 42, 0.04));
 }
@@ -415,9 +467,12 @@ watch(
 .nav-links {
   display: none;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   font-size: 14px;
   color: var(--accent-text, #0f766e);
+  order: 3;
+  width: 100%;
 }
 
 .nav-item {
@@ -451,6 +506,7 @@ watch(
   top: 42px;
   left: 0;
   width: 220px;
+  max-width: min(calc(100vw - 28px), 320px);
   background: var(--surface, #ffffff);
   border-radius: 14px;
   border: 1px solid var(--color-border, #e2e8f0);
@@ -478,9 +534,10 @@ watch(
 }
 
 .header-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
 }
 
 .search {
@@ -521,15 +578,26 @@ watch(
 }
 
 .auth-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  width: 100%;
+}
+
+.auth-actions > * {
+  min-width: 0;
+}
+
+.auth-actions > :only-child {
+  grid-column: 1 / -1;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  min-height: 42px;
   padding: 8px 14px;
   border-radius: 999px;
   font-size: 13px;
@@ -561,12 +629,15 @@ watch(
 
 .user-menu {
   position: relative;
+  width: 100%;
 }
 
 .user-trigger {
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
+  width: 100%;
   padding: 6px 12px;
   border-radius: 999px;
   background: var(--accent-soft, rgba(15, 118, 110, 0.08));
@@ -610,7 +681,8 @@ watch(
 .user-dropdown {
   right: 0;
   left: auto;
-  min-width: 240px;
+  width: min(calc(100vw - 28px), 280px);
+  min-width: 0;
 }
 
 button.dropdown-link {
@@ -686,8 +758,19 @@ button.dropdown-link {
 .dropdown-top {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
-  padding: 6px 8px;
+  padding: 0;
+}
+
+.header-theme-toggle {
+  order: 2;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.header-actions > .dropdown-top {
+  display: none;
 }
 
 .theme-toggle {
@@ -771,50 +854,144 @@ button.dropdown-link {
 }
 
 .mobile-nav {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
   font-size: 13px;
   color: var(--text-muted, #475569);
 }
 
 .mobile-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--surface, #ffffff);
   color: var(--text-muted, #475569);
   text-decoration: none;
   font-weight: 600;
+  text-align: center;
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
 }
 
 .mobile-link:hover {
   color: var(--header-text, #0f172a);
+  border-color: var(--color-border-hover, #cbd5e1);
+  background: var(--surface-muted, #f8fafc);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 480px) {
   .header-shell {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 18px 28px;
+    padding: 16px 18px 14px;
   }
 
-  .brand-nav {
-    justify-content: flex-start;
+  .brand-name {
+    font-size: 17px;
   }
+}
 
-  .nav-links {
-    display: inline-flex;
+@media (min-width: 640px) {
+  .header-shell {
+    padding: 18px 22px 16px;
   }
 
   .header-actions {
-    flex-direction: row;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
   }
 
   .search {
-    width: 280px;
+    grid-column: 1 / -1;
+  }
+
+  .mobile-nav {
+    gap: 10px;
+  }
+}
+
+@media (min-width: 768px) {
+  .header-shell {
+    padding: 20px 28px 18px;
+  }
+
+  .brand-nav {
+    justify-content: space-between;
+  }
+
+  .nav-links {
+    display: inline-flex;
+    width: auto;
+    order: 2;
+  }
+
+  .header-theme-toggle {
+    display: none;
+  }
+
+  .header-actions > .dropdown-top {
+    display: flex;
+  }
+
+  .header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .search {
+    width: min(42vw, 320px);
+  }
+
+  .auth-actions {
+    display: flex;
+    width: auto;
   }
 
   .mobile-nav {
     display: none;
+  }
+
+  .btn,
+  .user-trigger {
+    width: auto;
+  }
+
+  .user-menu {
+    width: auto;
+  }
+
+  .user-dropdown {
+    width: auto;
+    min-width: 240px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .header-shell {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+  }
+
+  .brand-nav {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .header-actions {
+    width: auto;
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+  }
+
+  .search {
+    width: 360px;
   }
 }
 </style>
