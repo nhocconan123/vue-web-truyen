@@ -1,39 +1,46 @@
 <template>
-  <div :class="['min-h-screen', themeClass]">
-    <header class="sticky top-0 z-40 border-b backdrop-blur bg-white/80">
-      <div class="max-w-6xl mx-auto px-4 py-3">
-        <div class="text-xs text-gray-500 mb-2">
-          <router-link to="/" class="hover:text-blue-600">Trang chủ</router-link>
+  <div :class="['reader-shell min-h-screen', themeClass]" :style="{ colorScheme: readerColorScheme }">
+    <header class="reader-header">
+      <div class="reader-header-inner">
+        <div class="reader-breadcrumb text-xs text-gray-500 mb-2">
+          <router-link to="/" class="reader-breadcrumb-link">Trang chủ</router-link>
           <span class="mx-2">/</span>
-          <router-link v-if="story?.slug || story?.id" :to="storyDetailLink" class="hover:text-blue-600">
+          <router-link v-if="story?.slug || story?.id" :to="storyDetailLink" class="reader-breadcrumb-link">
             {{ story?.title || 'Truyện' }}
           </router-link>
           <span class="mx-2">/</span>
-          <span>{{ chapterTitle || 'Đang tải...' }}</span>
+          <span v-tooltip="chapterTitle">{{ chapterTitle || 'Đang tải...' }}</span>
         </div>
 
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div>
-            <h1 class="text-lg font-semibold text-gray-900">{{ story?.title || 'Truyện' }}</h1>
-            <p class="text-sm text-gray-600">{{ chapterTitle }}</p>
+        <div class="reader-hero">
+          <div class="reader-hero-copy min-w-0">
+            <h1 class="reader-story-title">{{ story?.title || 'Truyện' }}</h1>
+            <p class="reader-chapter-subtitle" v-tooltip="chapterTitle">{{ chapterTitle }}</p>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="reader-nav-controls">
             <button
               @click="goPrev"
               :disabled="!hasPrev"
-              class="px-3 py-1 border rounded text-sm disabled:opacity-50"
+              class="reader-nav-button reader-nav-button--ghost"
             >
               Chương trước
             </button>
-            <select v-model.number="selectedChapterNumber" class="px-2 py-1 border rounded text-sm">
-              <option v-for="c in chapters" :key="c.id || c.chapterNumber" :value="c.chapterNumber">
-                Chương {{ c.chapterNumber }}: {{ c.title }}
-              </option>
-            </select>
+            <div class="reader-chapter-select" v-tooltip="selectedChapterLabel">
+              <select
+                v-model.number="selectedChapterNumber"
+                class="reader-select"
+                :title="selectedChapterLabel"
+                :aria-label="selectedChapterLabel"
+              >
+                <option v-for="c in chapters" :key="c.id || c.chapterNumber" :value="c.chapterNumber">
+                  {{ formatChapterLabel(c) }}
+                </option>
+              </select>
+            </div>
             <button
               @click="goNext"
               :disabled="!hasNext"
-              class="px-3 py-1 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
+              class="reader-nav-button reader-nav-button--primary"
             >
               Chương sau
             </button>
@@ -42,33 +49,41 @@
       </div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-4 py-8">
-      <section class="reading-panel border rounded-2xl shadow-sm p-6">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-          <div class="text-sm text-gray-500 space-x-4">
+    <main class="reader-main">
+      <section class="reading-panel">
+        <div class="reader-toolbar">
+          <div class="reader-meta text-sm">
             <span v-if="chapter?.createdAt">Cập nhật: {{ formatTime(chapter.createdAt) }}</span>
             <span v-if="stats?.chapterViews">Lượt xem chương: {{ stats.chapterViews }}</span>
             <span v-if="stats?.storyViews">Lượt xem truyện: {{ stats.storyViews }}</span>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 text-sm">
-            <span class="text-gray-500">Cỡ chữ</span>
-            <button @click="decreaseFont" class="px-2 py-1 border rounded">A-</button>
-            <button @click="increaseFont" class="px-2 py-1 border rounded">A+</button>
+          <div class="reader-settings">
+            <div class="reader-setting-group">
+              <span class="reader-setting-label">Cỡ chữ</span>
+              <div class="reader-setting-actions">
+                <button @click="decreaseFont" class="reader-setting-button">A-</button>
+                <button @click="increaseFont" class="reader-setting-button">A+</button>
+              </div>
+            </div>
 
-            <span class="text-gray-500 ml-2">Giãn dòng</span>
-            <select v-model="lineHeight" class="px-2 py-1 border rounded">
-              <option value="1.7">1.7</option>
-              <option value="1.9">1.9</option>
-              <option value="2.1">2.1</option>
-            </select>
+            <div class="reader-setting-group">
+              <label class="reader-setting-label" for="reader-line-height">Giãn dòng</label>
+              <select id="reader-line-height" v-model="lineHeight" class="reader-setting-select">
+                <option value="1.7">1.7</option>
+                <option value="1.9">1.9</option>
+                <option value="2.1">2.1</option>
+              </select>
+            </div>
 
-            <span class="text-gray-500 ml-2">Nền</span>
-            <select v-model="theme" class="px-2 py-1 border rounded">
-              <option value="light">Sáng</option>
-              <option value="sepia">Sepia</option>
-              <option value="dark">Tối</option>
-            </select>
+            <div class="reader-setting-group">
+              <label class="reader-setting-label" for="reader-theme">Nền</label>
+              <select id="reader-theme" v-model="theme" class="reader-setting-select">
+                <option value="light">Sáng</option>
+                <option value="sepia">Sepia</option>
+                <option value="dark">Tối</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -79,11 +94,11 @@
           <div v-html="renderedContent"></div>
         </article>
 
-        <div class="mt-8 flex items-center justify-between text-sm text-gray-600">
+        <div class="reader-footer-nav text-sm">
           <div>Chương {{ chapter?.chapterNumber || '' }}</div>
-          <div class="space-x-2">
-            <button @click="goPrev" :disabled="!hasPrev" class="px-3 py-1 border rounded">Chương trước</button>
-            <button @click="goNext" :disabled="!hasNext" class="px-3 py-1 bg-blue-600 text-white rounded">Chương sau</button>
+          <div class="reader-footer-buttons">
+            <button @click="goPrev" :disabled="!hasPrev" class="reader-nav-button reader-nav-button--ghost">Chương trước</button>
+            <button @click="goNext" :disabled="!hasNext" class="reader-nav-button reader-nav-button--primary">Chương sau</button>
           </div>
         </div>
       </section>
@@ -180,6 +195,13 @@ const chapterTitle = computed(() => {
   return `Chương ${chapter.value.chapterNumber}: ${chapter.value.title}`
 })
 
+const selectedChapterLabel = computed(() => {
+  const targetNumber = Number(selectedChapterNumber.value || chapter.value?.chapterNumber || chapterNumber.value || 0)
+  const currentChapter = chapters.value.find((item) => Number(item.chapterNumber) === targetNumber)
+  if (currentChapter) return formatChapterLabel(currentChapter)
+  return chapterTitle.value || ''
+})
+
 const storyDetailLink = computed(() => {
   if (story.value?.slug) return { name: 'StoryDetail', params: { id: story.value.slug } }
   return { name: 'StoryDetail', params: { id: story.value?.id } }
@@ -190,6 +212,8 @@ const themeClass = computed(() => ({
   'theme-sepia': theme.value === 'sepia',
   'theme-dark': theme.value === 'dark'
 }))
+
+const readerColorScheme = computed(() => (theme.value === 'dark' ? 'dark' : 'light'))
 
 const contentStyle = computed(() => ({
   fontSize: `${fontSize.value}px`,
@@ -225,6 +249,11 @@ function formatContent(raw) {
     .filter(Boolean)
     .map(line => `<p>${escapeHtml(line)}</p>`)
     .join('')
+}
+
+function formatChapterLabel(chapterItem) {
+  if (!chapterItem) return ''
+  return `Chương ${chapterItem.chapterNumber}: ${chapterItem.title || ''}`.trim()
 }
 
 function getPrevFromList() {
@@ -447,30 +476,428 @@ onMounted(loadRead)
 </script>
 
 <style scoped>
+.reader-shell {
+  background: var(--reader-shell-bg);
+  color: var(--reader-body);
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.reader-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--reader-border);
+  backdrop-filter: blur(18px);
+  background: var(--reader-header-bg);
+}
+
+.reader-header-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 0.875rem;
+}
+
+.reader-main {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 2rem;
+}
+
 .reading-panel {
   background: var(--reading-bg);
   color: var(--reading-text);
+  border: 1px solid var(--reader-border);
+  border-radius: 1.5rem;
+  box-shadow: 0 24px 50px -34px rgba(15, 23, 42, 0.35);
+  padding: 1.1rem;
+}
+
+.reader-breadcrumb {
+  line-height: 1.55;
+  word-break: break-word;
+  color: var(--reader-muted);
+}
+
+.reader-breadcrumb-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.reader-breadcrumb-link:hover {
+  color: var(--reader-heading);
+}
+
+.reader-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.reader-hero-copy {
+  min-width: 0;
+}
+
+.reader-story-title {
+  margin: 0;
+  color: var(--reader-heading);
+  font-size: clamp(1.4rem, 4.8vw, 2rem);
+  line-height: 1.2;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.reader-chapter-subtitle {
+  margin-top: 0.4rem;
+  color: var(--reader-subtle);
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.reader-nav-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+.reader-nav-button,
+.reader-chapter-select,
+.reader-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.reader-chapter-select {
+  overflow: hidden;
+}
+
+.reader-select {
+  max-width: 100%;
+}
+
+.reader-nav-button {
+  min-height: 2.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.72rem 0.95rem;
+  border-radius: 0.95rem;
+  border: 1px solid var(--reader-control-border);
+  background: var(--reader-control-bg);
+  color: var(--reader-control-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+
+.reader-nav-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.reader-nav-button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 25px -18px rgba(37, 99, 235, 0.45);
+}
+
+.reader-nav-button--ghost {
+  background: var(--reader-control-soft);
+}
+
+.reader-nav-button--primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--reader-primary), var(--reader-primary-strong));
+  color: #ffffff;
+}
+
+.reader-select,
+.reader-setting-select,
+.reader-setting-button {
+  min-height: 2.85rem;
+  border: 1px solid var(--reader-control-border);
+  border-radius: 0.95rem;
+  background: var(--reader-control-bg);
+  color: var(--reader-control-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.reader-select,
+.reader-setting-select {
+  padding: 0.72rem 0.9rem;
+}
+
+.reader-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0.95rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--reader-border);
+  border-radius: 1.15rem;
+  background: var(--reader-toolbar-bg);
+}
+
+.reader-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.reader-meta span {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--reader-border);
+  background: var(--reader-chip-bg);
+  color: var(--reader-subtle);
+}
+
+.reader-settings {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.reader-setting-group {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid var(--reader-border);
+  border-radius: 1rem;
+  background: var(--reader-control-soft);
+}
+
+.reader-setting-label {
+  color: var(--reader-subtle);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.reader-setting-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.reader-setting-button {
+  padding: 0.72rem 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reader-select,
+.reader-setting-select {
+  width: 100%;
+}
+
+.reader-select:focus,
+.reader-setting-select:focus,
+.reader-setting-button:focus {
+  outline: none;
+  border-color: var(--reader-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+}
+
+.reader-footer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--reader-border);
+}
+
+.reader-footer-buttons {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  width: 100%;
 }
 
 .reading-content :deep(p) {
   margin-bottom: 1rem;
 }
 
+.reader-shell :deep(.bg-white) {
+  background-color: var(--reader-card-bg);
+}
+
+.reader-shell :deep(.text-gray-900) {
+  color: var(--reader-heading);
+}
+
+.reader-shell :deep(.text-gray-800) {
+  color: var(--reader-body);
+}
+
+.reader-shell :deep(.text-gray-700) {
+  color: var(--reader-subtle);
+}
+
+.reader-shell :deep(.text-gray-600),
+.reader-shell :deep(.text-gray-500),
+.reader-shell :deep(.text-gray-400) {
+  color: var(--reader-muted);
+}
+
+.reader-shell :deep(.border),
+.reader-shell :deep(.border-t) {
+  border-color: var(--reader-border);
+}
+
+@media (max-width: 639px) {
+  .reader-main {
+    padding-top: 1rem;
+  }
+
+  .reading-panel {
+    border-radius: 1.15rem;
+    padding: 0.95rem;
+  }
+
+  .reader-select,
+  .reader-setting-select,
+  .reader-setting-button,
+  .reader-nav-button {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 640px) {
+  .reader-header-inner {
+    padding: 1rem 1.25rem 0.95rem;
+  }
+
+  .reader-main {
+    padding: 1.5rem 1.25rem 2.5rem;
+  }
+
+  .reader-nav-controls {
+    grid-template-columns: auto minmax(18rem, 24rem) auto;
+    width: auto;
+  }
+
+  .reader-nav-button {
+    width: auto;
+  }
+
+  .reader-chapter-select {
+    width: 100%;
+  }
+
+  .reader-meta {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+  }
+
+  .reader-settings {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .reader-footer-nav {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .reader-footer-buttons {
+    display: flex;
+    width: auto;
+    gap: 0.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .reader-hero {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.25rem;
+  }
+
+  .reader-toolbar {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .reader-meta {
+    max-width: 48%;
+  }
+
+  .reader-settings {
+    max-width: 52%;
+  }
+}
+
 .theme-light {
   --reading-bg: #ffffff;
   --reading-text: #1f2937;
-  background: #f5f5f5;
+  --reader-shell-bg: linear-gradient(180deg, #f7faff 0%, #eef2ff 100%);
+  --reader-header-bg: rgba(255, 255, 255, 0.88);
+  --reader-toolbar-bg: rgba(248, 250, 252, 0.92);
+  --reader-card-bg: #ffffff;
+  --reader-heading: #0f172a;
+  --reader-body: #1f2937;
+  --reader-muted: #64748b;
+  --reader-subtle: #475569;
+  --reader-border: rgba(148, 163, 184, 0.3);
+  --reader-chip-bg: rgba(255, 255, 255, 0.82);
+  --reader-control-bg: #ffffff;
+  --reader-control-soft: #f8fafc;
+  --reader-control-border: #dbe4ee;
+  --reader-control-text: #0f172a;
+  --reader-primary: #2563eb;
+  --reader-primary-strong: #1d4ed8;
 }
 
 .theme-sepia {
   --reading-bg: #f7f1e1;
   --reading-text: #4b3f2f;
-  background: #efe6d3;
+  --reader-shell-bg: linear-gradient(180deg, #f6efe1 0%, #eadfcb 100%);
+  --reader-header-bg: rgba(248, 241, 226, 0.9);
+  --reader-toolbar-bg: rgba(247, 239, 225, 0.88);
+  --reader-card-bg: #fbf5e8;
+  --reader-heading: #3d3123;
+  --reader-body: #4b3f2f;
+  --reader-muted: #8b7355;
+  --reader-subtle: #66533e;
+  --reader-border: rgba(120, 93, 63, 0.22);
+  --reader-chip-bg: rgba(255, 250, 240, 0.82);
+  --reader-control-bg: #fff8ec;
+  --reader-control-soft: rgba(255, 249, 238, 0.82);
+  --reader-control-border: #dcc7a7;
+  --reader-control-text: #3d3123;
+  --reader-primary: #b7791f;
+  --reader-primary-strong: #975a16;
 }
 
 .theme-dark {
   --reading-bg: #111827;
   --reading-text: #e5e7eb;
-  background: #0f172a;
+  --reader-shell-bg: linear-gradient(180deg, #020617 0%, #0f172a 100%);
+  --reader-header-bg: rgba(5, 10, 24, 0.88);
+  --reader-toolbar-bg: rgba(15, 23, 42, 0.86);
+  --reader-card-bg: #0f172a;
+  --reader-heading: #f8fafc;
+  --reader-body: #e2e8f0;
+  --reader-muted: #94a3b8;
+  --reader-subtle: #cbd5e1;
+  --reader-border: rgba(71, 85, 105, 0.55);
+  --reader-chip-bg: rgba(15, 23, 42, 0.86);
+  --reader-control-bg: #0f172a;
+  --reader-control-soft: rgba(15, 23, 42, 0.72);
+  --reader-control-border: #334155;
+  --reader-control-text: #f8fafc;
+  --reader-primary: #3b82f6;
+  --reader-primary-strong: #2563eb;
 }
 </style>

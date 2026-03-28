@@ -1,11 +1,11 @@
 ﻿<template>
-  <div class="admin-dashboard min-h-screen p-6">
-    <div class="flex items-center justify-between mb-6">
+  <div class="admin-dashboard min-h-screen p-4 sm:p-6">
+    <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div>
         <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Quản lý truyện</h1>
         <p class="text-sm text-slate-600">Duyệt, chỉnh sửa và quản lý truyện</p>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center gap-3">
         <router-link to="/admin/stories/new">
           <BaseButton class="shadow-sm">Thêm truyện mới</BaseButton>
         </router-link>
@@ -96,16 +96,16 @@
     </div>
 
     <div class="panel overflow-hidden">
-      <table class="w-full text-sm">
+      <table class="w-full table-fixed text-sm md:table-auto">
         <thead class="bg-slate-100/70 text-left text-slate-600 text-xs uppercase tracking-wide">
           <tr>
             <th class="p-3">#</th>
             <th class="p-3">Tiêu đề</th>
-            <th class="p-3">Tác giả</th>
-            <th class="p-3">Trạng thái</th>
-            <th class="p-3">Xuất bản</th>
-            <th class="p-3">Ngày tạo</th>
-            <th class="p-3 text-right">Hành động</th>
+            <th class="hidden p-3 md:table-cell">Tác giả</th>
+            <th class="hidden p-3 md:table-cell">Trạng thái</th>
+            <th class="hidden p-3 md:table-cell">Xuất bản</th>
+            <th class="hidden p-3 md:table-cell">Ngày tạo</th>
+            <th class="hidden p-3 text-right md:table-cell">Hành động</th>
           </tr>
         </thead>
         <tbody>
@@ -115,8 +115,8 @@
           <tr v-else-if="stories.length === 0" class="border-t">
             <td colspan="7" class="p-4 text-center text-gray-500">Không có truyện phù hợp</td>
           </tr>
-          <tr v-for="(s, idx) in stories" :key="s.id || idx" class="border-t hover:bg-slate-50/70 transition-colors">
-            <td class="p-3 align-top">{{ idx + 1 + page * size }}</td>
+          <tr v-for="(s, idx) in stories" :key="s.id || idx" class="border-t transition-colors hover:bg-slate-50/70">
+            <td class="w-12 p-3 align-top text-base md:w-auto">{{ idx + 1 + page * size }}</td>
             <td class="p-3 align-top">
               <div class="flex items-center gap-2 min-w-0">
                 <div
@@ -139,16 +139,96 @@
               >
                 {{ s.slug }}
               </div>
+              <div class="mt-3 space-y-3 md:hidden">
+                <div class="grid grid-cols-1 gap-2 text-xs text-slate-500">
+                  <div>
+                    <span class="font-medium uppercase tracking-wide text-slate-400">Tác giả</span>
+                    <div class="mt-1 text-sm text-slate-700">{{ s.author || s.authorName || 'Ẩn danh' }}</div>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <span :class="statusClass(s.status)" v-tooltip="statusLabel(s.status)">{{ statusLabel(s.status) }}</span>
+                    <span :class="publishClass(s.publishStatus)" v-tooltip="publishLabel(s.publishStatus)">{{ publishLabel(s.publishStatus) }}</span>
+                  </div>
+                  <div>
+                    <span class="font-medium uppercase tracking-wide text-slate-400">Ngày tạo</span>
+                    <div class="mt-1 text-sm text-slate-700">{{ formatDate(s.createdAt) }}</div>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <router-link
+                    :to="storyDetailLink(s)"
+                    class="mobile-action mobile-action--view"
+                    v-tooltip="'Xem'"
+                    aria-label="Xem"
+                    @click="markCommentSeen(s)"
+                  >
+                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6">
+                      <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z" />
+                      <circle cx="12" cy="12" r="3.2" />
+                    </svg>
+                    <span>Xem</span>
+                  </router-link>
+                  <button
+                    @click="editStory(s)"
+                    :disabled="!canEditStory(s)"
+                    :title="actionTitle(canEditStory(s), 'Bạn chỉ được sửa truyện do chính mình tạo.')"
+                    class="mobile-action mobile-action--edit"
+                    v-tooltip="'Sửa'"
+                    aria-label="Sửa"
+                  >
+                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6">
+                      <path d="M3.5 16.5L15.5 4.5a2.1 2.1 0 0 1 3 3L6.5 19.5 3 20l.5-3.5z" />
+                      <path d="M13 6l5 5" />
+                    </svg>
+                    <span>Sửa</span>
+                  </button>
+                  <button
+                    @click="removeStory(s)"
+                    :disabled="!canDeleteStory(s)"
+                    :title="actionTitle(canDeleteStory(s), 'Bạn chỉ được xóa truyện do chính mình tạo.')"
+                    class="mobile-action mobile-action--delete"
+                    v-tooltip="'Xóa'"
+                    aria-label="Xóa"
+                  >
+                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6">
+                      <path d="M4 7h16" />
+                      <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                      <path d="M7 7l1 13a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-13" />
+                      <path d="M10 11v6M14 11v6" />
+                    </svg>
+                    <span>Xóa</span>
+                  </button>
+                  <button
+                    v-if="s.status === 'PENDING'"
+                    @click="approveStory(s)"
+                    :disabled="!canApproveStory(s)"
+                    :title="actionTitle(canApproveStory(s), 'Chỉ admin mới có quyền duyệt truyện.')"
+                    class="mobile-action mobile-action--approve"
+                  >
+                    Duyệt
+                  </button>
+                  <button
+                    v-if="s.status === 'PENDING'"
+                    @click="rejectStory(s)"
+                    :disabled="!canApproveStory(s)"
+                    :title="actionTitle(canApproveStory(s), 'Chỉ admin mới có quyền từ chối truyện.')"
+                    class="mobile-action mobile-action--reject"
+                  >
+                    Từ chối
+                  </button>
+                </div>
+              </div>
             </td>
-            <td class="p-3 align-top">{{ s.author || s.authorName || 'Ẩn danh' }}</td>
-            <td class="p-3 align-top">
+            <td class="hidden p-3 align-top md:table-cell">{{ s.author || s.authorName || 'Ẩn danh' }}</td>
+            <td class="hidden p-3 align-top md:table-cell">
               <span :class="statusClass(s.status)" v-tooltip="statusLabel(s.status)">{{ statusLabel(s.status) }}</span>
             </td>
-            <td class="p-3 align-top">
+            <td class="hidden p-3 align-top md:table-cell">
               <span :class="publishClass(s.publishStatus)" v-tooltip="publishLabel(s.publishStatus)">{{ publishLabel(s.publishStatus) }}</span>
             </td>
-            <td class="p-3 align-top">{{ formatDate(s.createdAt) }}</td>
-            <td class="p-3 align-top text-right space-x-2">
+            <td class="hidden p-3 align-top md:table-cell">{{ formatDate(s.createdAt) }}</td>
+            <td class="hidden p-3 align-top text-right space-x-2 md:table-cell">
               <router-link
                 :to="storyDetailLink(s)"
                 class="relative inline-flex items-center justify-center w-9 h-9 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50"
@@ -556,4 +636,58 @@ watch([tab, page, size, keyword, statusFilter, publishFilter], () => {
 }
 
 table td, table th { vertical-align: middle }
+
+.mobile-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
+}
+
+.mobile-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mobile-action--view {
+  color: #4f46e5;
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+.mobile-action--edit {
+  color: #334155;
+}
+
+.mobile-action--delete {
+  color: #ffffff;
+  border-color: #e11d48;
+  background: #e11d48;
+}
+
+.mobile-action--approve {
+  color: #ffffff;
+  border-color: #059669;
+  background: #059669;
+}
+
+.mobile-action--reject {
+  color: #ffffff;
+  border-color: #d97706;
+  background: #d97706;
+}
+
+@media (max-width: 767px) {
+  .panel {
+    border-radius: 14px;
+  }
+}
 </style>

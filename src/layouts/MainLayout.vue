@@ -1,8 +1,7 @@
 <template>
-  <div class="flex flex-col min-h-screen app-shell" style="width: 1400px">
+  <div class="app-shell flex min-h-screen w-full flex-col overflow-x-hidden">
     <AppHeader v-if="showHeader" />
-    <!-- full width layout without max constraint -->
-    <main class="flex-1 w-full mx-auto px-4 py-8">
+    <main class="flex-1 w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <slot />
     </main>
     <AppFooter v-if="showFooter" />
