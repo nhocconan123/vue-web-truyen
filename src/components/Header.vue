@@ -133,9 +133,7 @@
               <router-link to="/admin" class="dropdown-link" @click="closeUserMenu">
                 Dashboard
               </router-link>
-              <button type="button" class="dropdown-link" @click="toggleEditName">
-                Sửa tên user
-              </button>
+             
               <div v-if="showEditName" class="dropdown-edit">
                 <input
                   v-model="editUsername"
